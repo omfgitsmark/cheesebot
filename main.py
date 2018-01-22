@@ -10,6 +10,7 @@ deck = cards.Deck()
 
 @cheeseBot.event
 async def on_ready():
+	# do DB setup on initial run
 	misc.debug("cheeseBot Online!")
 	config.loadConfig(cheeseBot)
     
@@ -18,11 +19,13 @@ async def on_message(message):
 	if message.author.bot:
 		return
 	global bot_prefix
+	# config print command
 	if message.content.lower().startswith(bot_prefix + "config"):
-		retstr = ""
+		retstr = "```"
 		for cfg in config.cfg:
 			tmpsrv = cheeseBot.get_server(cfg["server"])
 			retstr += "Name = " + tmpsrv.name + " | ID = " + cfg["server"] + " | Topic = \"" + cfg["topic"] + "\" | Respond = " + str(cfg["respond"]) + "\n" 
+		retstr += "```"
 		return await cheeseBot.send_message(message.channel, retstr)
 	# battle commands
 	tmp = battle.handleMessage(message, bot_prefix)
@@ -44,7 +47,7 @@ async def on_message(message):
 @cheeseBot.command()
 async def info():
 	"""Retrieves bot information."""
-	return await cheeseBot.say('Hello, I am :cheese:**cheeseBot**!\nI was created by Mark, who is not very good at scripting so give him some time to make me worth something, and then I\'ll be open source.\n\nCheck out http://249d.com for more projects and information.')
+	return await cheeseBot.say('Hello, I am :cheese:**cheeseBot**!\n Find me at: https://github.com/omfgitsmark/cheesebot \n\nCheck out http://249d.com for more projects and information.')
 
 @cheeseBot.command()
 async def invite():
@@ -57,6 +60,7 @@ async def shutup(ctx):
 	for i in config.cfg:
 		if i["server"] == ctx.message.server.id:
 			i["respond"] = 0
+			config.saveConfig()
 			return await cheeseBot.say("I'm sorry, I will be quiet now.")
 	
 @cheeseBot.command(pass_context=True)
@@ -65,6 +69,7 @@ async def talk(ctx):
 	for i in config.cfg:
 		if i["server"] == ctx.message.server.id:
 			i["respond"] = 1
+			config.saveConfig()
 			return await cheeseBot.say("Hello, how can I help?")
 
 @cheeseBot.command(pass_context=True)
@@ -228,20 +233,19 @@ async def scoreboard():
 
 @cheeseBot.command(pass_context=True)
 async def topic(ctx):
-	try:
-		arr = ctx.message.content.split('"')
-		if len(arr) > 1:
-			for i in config.cfg:
-				if i["server"] == ctx.message.server.id:
-					i["topic"] = arr[1]
-					return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
-		if ctx.message.content.replace(bot_prefix + "topic ", "") and ctx.message.content.replace(bot_prefix + "topic", ""):
-			for i in config.cfg:
-				if i["server"] == ctx.message.server.id:
-					i["topic"] = ctx.message.content.replace(bot_prefix + "topic ", "")
-					return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
-	except:
-		misc.debug("Invalid topic format")
+	arr = ctx.message.content.split('"')
+	if len(arr) > 1:
+		for i in config.cfg:
+			if i["server"] == ctx.message.server.id:
+				i["topic"] = arr[1]
+				config.saveConfig()
+				return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
+	if ctx.message.content.replace(bot_prefix + "topic ", "") and ctx.message.content.replace(bot_prefix + "topic", ""):
+		for i in config.cfg:
+			if i["server"] == ctx.message.server.id:
+				i["topic"] = ctx.message.content.replace(bot_prefix + "topic ", "")
+				config.saveConfig()
+				return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
 		
 	for i in config.cfg:
 		if i["server"] == ctx.message.server.id:
@@ -250,5 +254,5 @@ async def topic(ctx):
 			else:
 				return await cheeseBot.say(":thought_balloon: No topic has been set. Say `" + bot_prefix + "topic \"Your topic here\"` to set the topic.")
 	
-
+	
 cheeseBot.run("secret")
