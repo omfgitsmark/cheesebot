@@ -3,6 +3,7 @@
 #import json
 import urllib.request
 import datetime
+import os
 
 def getWebData(url):
 	try:
@@ -37,4 +38,6 @@ def appendFile(path, data):
 			
 def debug(txt):
 	print(txt)
+	if not os.path.exists("log"):
+		os.makedirs("log")
 	appendFile("log/log.txt",str(datetime.datetime.now()) + " - " + txt + "\n")
