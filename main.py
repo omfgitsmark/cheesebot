@@ -38,6 +38,7 @@ async def on_message(message):
 				tmpresponse = respond.getResponse(message)
 				if tmpresponse:
 					return await cheeseBot.send_message(message.channel, tmpresponse)
+	# Default command handling
 	return await cheeseBot.process_commands(message)
 
 @cheeseBot.command()
@@ -249,20 +250,5 @@ async def topic(ctx):
 			else:
 				return await cheeseBot.say(":thought_balloon: No topic has been set. Say `" + bot_prefix + "topic \"Your topic here\"` to set the topic.")
 	
-	
-#@cheeseBot.command(pass_context=True)
-#async def trends(ctx, *args):
-#		return await cheeseBot.say(gt.getGTrends(ctx.message.content))
-	
-	
-# TO ADD:
-# x roll
-# - trends [term1] [term2]
-# - define [word]
-# x cutefix
-# - looking [game] (@mentions anyone thats opted into that games list)
-# - inspiration
-# x topic
-
 
 cheeseBot.run("secret")
