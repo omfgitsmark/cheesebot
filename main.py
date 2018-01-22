@@ -1,22 +1,29 @@
+import discord
 from discord.ext.commands import Bot
 import random
-from inc import battle, respond, cards, help, misc
+import sqlite3
+from inc import battle, respond, cards, help, config, misc
 
 bot_prefix = '.'
 cheeseBot = Bot(command_prefix=bot_prefix)
-#gt = trends.Trends()
 deck = cards.Deck()
-currenttopic = ""
 
 @cheeseBot.event
 async def on_ready():
 	misc.debug("cheeseBot Online!")
+	config.loadConfig(cheeseBot)
     
 @cheeseBot.event
 async def on_message(message):
 	if message.author.bot:
 		return
 	global bot_prefix
+	if message.content.lower().startswith(bot_prefix + "config"):
+		retstr = ""
+		for cfg in config.cfg:
+			tmpsrv = cheeseBot.get_server(cfg["server"])
+			retstr += "Name = " + tmpsrv.name + " | ID = " + cfg["server"] + " | Topic = \"" + cfg["topic"] + "\" | Respond = " + str(cfg["respond"]) + "\n" 
+		return await cheeseBot.send_message(message.channel, retstr)
 	# battle commands
 	tmp = battle.handleMessage(message, bot_prefix)
 	if tmp:
@@ -25,12 +32,15 @@ async def on_message(message):
 	if message.content.lower().startswith(bot_prefix + "help"):
 		return await cheeseBot.send_message(message.channel, help.getHelp(message, bot_prefix))
 	# Response handling
-	tmpresponse = respond.getResponse(message)
-	if tmpresponse:
-		return await cheeseBot.send_message(message.channel, tmpresponse)
+	for i in config.cfg:
+		if i["server"] == message.server.id:
+			if i["respond"] > 0:
+				tmpresponse = respond.getResponse(message)
+				if tmpresponse:
+					return await cheeseBot.send_message(message.channel, tmpresponse)
 	return await cheeseBot.process_commands(message)
 
-@cheeseBot.command(description='What do you not get about that?\n\nExample:')
+@cheeseBot.command()
 async def info():
 	"""Retrieves bot information."""
 	return await cheeseBot.say('Hello, I am :cheese:**cheeseBot**!\nI was created by Mark, who is not very good at scripting so give him some time to make me worth something, and then I\'ll be open source.\n\nCheck out http://249d.com for more projects and information.')
@@ -40,17 +50,21 @@ async def invite():
 	"""Generates invite link."""
 	return await cheeseBot.say("https://discord.gg/K5MqgPs")
 
-@cheeseBot.command()
-async def shutup():
+@cheeseBot.command(pass_context=True)
+async def shutup(ctx):
 	"""Shuts the bot up."""
-	respond.autoRespond = 0
-	return await cheeseBot.say("I'm sorry, I will be quiet now.")
+	for i in config.cfg:
+		if i["server"] == ctx.message.server.id:
+			i["respond"] = 0
+			return await cheeseBot.say("I'm sorry, I will be quiet now.")
 	
-@cheeseBot.command()
-async def talk():
+@cheeseBot.command(pass_context=True)
+async def talk(ctx):
 	"""Make the bot respond to certain statements."""
-	respond.autoRespond = 1
-	return await cheeseBot.say("Hello, how can I help?")
+	for i in config.cfg:
+		if i["server"] == ctx.message.server.id:
+			i["respond"] = 1
+			return await cheeseBot.say("Hello, how can I help?")
 
 @cheeseBot.command(pass_context=True)
 async def roll(ctx, NdN = "1d100"):
@@ -102,7 +116,11 @@ async def choose(ctx, Choice1="", Choice2="", etc=""):
 @cheeseBot.command(pass_context=True)
 async def meme(ctx):
 	"""Posts a random meme."""
-	misc.appendFile("data/shitlist.txt", ctx.message.author.name + "\n")
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("INSERT INTO shitlist VALUES (NULL,?)", (ctx.message.author.name,))
+	conn.commit()
+	conn.close()
 	return await cheeseBot.say("**" + ctx.message.author.name + "** is a dirty memer and has been added to the ShitList.")
 
 @cheeseBot.command()
@@ -122,11 +140,16 @@ async def score(ctx):
 		arr = ctx.message.content.split(" ")
 		if len(arr) > 1 and arr[1]:
 			testname = arr[1]
-	data = misc.readFile("data/scores.txt")
-	for line in data.splitlines():
-		if line.split(',')[0].lower() == testname.lower():
-			return await cheeseBot.say("**" + testname + "** currently has " + line.split(',')[1] + " Points.")
-	return await cheeseBot.say("**" + testname + "** currently has 0 Points.")
+	# DB
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("SELECT * FROM scores WHERE name=?", (testname,))
+	rows = c.fetchall()
+	if len(rows) > 0:
+		await cheeseBot.say("**" + testname + "** currently has " + str(rows[0][2]) + " Points.")
+	else:
+		await cheeseBot.say("**" + testname + "** currently has 0 Points.")
+	conn.close()
 
 @cheeseBot.command(pass_context=True)
 async def deal(ctx):
@@ -148,100 +171,98 @@ async def deal(ctx):
 	
 @cheeseBot.command()
 async def shitlist():
-	#try:
-		d = misc.readFile("data/shitlist.txt")
-		if d:
-			d = "**Users currently on the ShitList:**\n" + d
-			return await cheeseBot.say(d)
-		else:
-			return await cheeseBot.say("There is currently nobody on the Shit List!")
-	#except:
-	#	misc.debug("Error getting shitlist.txt")
-	
+	retstr = ""
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("SELECT * FROM shitlist")
+	rows = c.fetchall()
+	for row in rows:
+		retstr += row[1] + "\n"
+	conn.close()
+	if retstr:
+		retstr = "**Users currently on the ShitList:**\n" + retstr
+		return await cheeseBot.say(retstr)
+	else:
+		return await cheeseBot.say("There is currently nobody on the Shit List!")	
 	
 @cheeseBot.command()
 async def leaderboard():
 	"""Shows the leaderboard."""
-	all = []
-	top5 = []
-	data = misc.readFile("data/scores.txt")
-	lines = data.splitlines()
-	for line in lines:
-		arr = line.split(',')
-		try:
-			all.append({"name":arr[0],"score":int(arr[1])})
-		except:
-			misc.debug("ERROR: Some user info in scores.txt may be corrupted.")
-	for i in range(0,3):
-		currentmax = 0
-		currentuser = ""
-		for entry in all:
-			if not entry in top5:
-				if entry["score"] > currentmax:
-					currentuser = entry["name"]
-					currentmax = entry["score"]
-		top5.append({"name":currentuser, "score":currentmax})
 	retstr = ""
-	c = 0
-	for entry in top5:
-		if entry["name"]:
-			if c == 0: retstr += ":first_place: "
-			if c == 1: retstr += "    :second_place: "
-			if c == 2: retstr += "        :third_place: "
-			retstr += "**" + entry["name"] + "** [" + str(entry["score"]) + " points]\n"
-			c += 1
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("SELECT * FROM scores ORDER BY score DESC")
+	rows = c.fetchall()
+	if len(rows) >= 3:
+		length = 3
+	else:
+		length = len(rows)
+	for i in range(0, length):
+		if i == 0: retstr += ":first_place: "
+		if i == 1: retstr += "    :second_place: "
+		if i == 2: retstr += "        :third_place: "
+		retstr += "**" + rows[i][1] + "** [" + str(rows[i][2]) + " points]\n"
+	conn.close()
 	return await cheeseBot.say(retstr)
 	
 @cheeseBot.command()
 async def scoreboard():
 	"""Alias of leaderboard."""
-	all = []
-	top5 = []
-	data = misc.readFile("data/scores.txt")
-	lines = data.splitlines()
-	for line in lines:
-		arr = line.split(',')
-		try:
-			all.append({"name":arr[0],"score":int(arr[1])})
-		except:
-			misc.debug("ERROR: Some user info in scores.txt may be corrupted.")
-	for i in range(0,3):
-		currentmax = 0
-		currentuser = ""
-		for entry in all:
-			if not entry in top5:
-				if entry["score"] > currentmax:
-					currentuser = entry["name"]
-					currentmax = entry["score"]
-		top5.append({"name":currentuser, "score":currentmax})
 	retstr = ""
-	c = 0
-	for entry in top5:
-		if entry["name"]:
-			if c == 0: retstr += ":first_place: "
-			if c == 1: retstr += "    :second_place: "
-			if c == 2: retstr += "        :third_place: "
-			retstr += "**" + entry["name"] + "** [" + str(entry["score"]) + " points]\n"
-			c += 1
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("SELECT * FROM scores ORDER BY score DESC")
+	rows = c.fetchall()
+	if len(rows) >= 3:
+		length = 3
+	else:
+		length = len(rows)
+	for i in range(0, length):
+		if i == 0: retstr += ":first_place: "
+		if i == 1: retstr += "    :second_place: "
+		if i == 2: retstr += "        :third_place: "
+		retstr += "**" + rows[i][1] + "** [" + str(rows[i][2]) + " points]\n"
+	conn.close()
 	return await cheeseBot.say(retstr)
 
 @cheeseBot.command(pass_context=True)
 async def topic(ctx):
-	global currenttopic
 	try:
 		arr = ctx.message.content.split('"')
 		if len(arr) > 1:
-			currenttopic = arr[1]
-			return await cheeseBot.say(":pencil2: **Topic Set:** " + currenttopic)
+			for i in config.cfg:
+				if i["server"] == ctx.message.server.id:
+					i["topic"] = arr[1]
+					return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
 		if ctx.message.content.replace(bot_prefix + "topic ", "") and ctx.message.content.replace(bot_prefix + "topic", ""):
-			currenttopic = ctx.message.content.replace(bot_prefix + "topic ", "")
-			return await cheeseBot.say(":pencil2: **Topic Set:** " + currenttopic)
+			for i in config.cfg:
+				if i["server"] == ctx.message.server.id:
+					i["topic"] = ctx.message.content.replace(bot_prefix + "topic ", "")
+					return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
 	except:
 		misc.debug("Invalid topic format")
-	if currenttopic:
-		return await cheeseBot.say(":notepad_spiral: **Topic:** " + currenttopic)
-	else:
-		return await cheeseBot.say(":thought_balloon: No topic has been set. Say `" + bot_prefix + "topic \"Your topic here\"` to set the topic.")
+		
+	for i in config.cfg:
+		if i["server"] == ctx.message.server.id:
+			if i["topic"]:
+				return await cheeseBot.say(":notepad_spiral: **Topic:** " + i["topic"])
+			else:
+				return await cheeseBot.say(":thought_balloon: No topic has been set. Say `" + bot_prefix + "topic \"Your topic here\"` to set the topic.")
 	
+	
+#@cheeseBot.command(pass_context=True)
+#async def trends(ctx, *args):
+#		return await cheeseBot.say(gt.getGTrends(ctx.message.content))
+	
+	
+# TO ADD:
+# x roll
+# - trends [term1] [term2]
+# - define [word]
+# x cutefix
+# - looking [game] (@mentions anyone thats opted into that games list)
+# - inspiration
+# x topic
 
-cheeseBot.run("Token")
+
+cheeseBot.run("secret")

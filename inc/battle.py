@@ -1,6 +1,7 @@
 import discord
 import random
 import datetime
+#import asyncio # use to create background task checking for idle battles
 
 battles = []
 
@@ -30,8 +31,8 @@ class Battle(object):
 	state = "Awaiting Opponent"
 	turn = 0
 	turnstate = 0
-	#starttime
-	#updatetime
+	starttime = datetime.datetime.now()
+	updatetime = datetime.datetime.now()
 		
 	def __init__(self, cer, cee, srv, chan):
 		self.challenger = Player(cer)
