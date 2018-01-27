@@ -1,7 +1,7 @@
 import discord
 import random
 import datetime
-#import asyncio # use to create background task checking for idle battles
+#import asyncio # use to create background task checking for idle battles to cancel
 
 battles = []
 
@@ -47,8 +47,8 @@ class Battle(object):
 			self.challenger.battleclass = classname
 			if classname == "warrior":
 				retstr += ":crossed_swords: "
-				self.challenger.maxhp = 150
-				self.challenger.hp = 150
+				self.challenger.maxhp = 120
+				self.challenger.hp = 120
 				self.challenger.maxmp = 20
 				self.challenger.mp = 20
 				self.challenger.attack = 18
@@ -57,8 +57,8 @@ class Battle(object):
 				self.challenger.intelligence = 6
 			if classname == "wizard":
 				retstr += ":scroll: "
-				self.challenger.maxhp = 100
-				self.challenger.hp = 100
+				self.challenger.maxhp = 80
+				self.challenger.hp = 80
 				self.challenger.maxmp = 50
 				self.challenger.mp = 50
 				self.challenger.attack = 10
@@ -67,8 +67,8 @@ class Battle(object):
 				self.challenger.intelligence = 18
 			if classname == "ranger":
 				retstr += ":bow_and_arrow: "
-				self.challenger.maxhp = 120
-				self.challenger.hp = 120
+				self.challenger.maxhp = 100
+				self.challenger.hp = 100
 				self.challenger.maxmp = 30
 				self.challenger.mp = 30
 				self.challenger.attack = 15
@@ -79,8 +79,8 @@ class Battle(object):
 			self.challengee.battleclass = classname
 			if classname == "warrior":
 				retstr += ":crossed_swords: "
-				self.challengee.maxhp = 150
-				self.challengee.hp = 150
+				self.challengee.maxhp = 120
+				self.challengee.hp = 120
 				self.challengee.maxmp = 20
 				self.challengee.mp = 20
 				self.challengee.attack = 18
@@ -89,8 +89,8 @@ class Battle(object):
 				self.challengee.intelligence = 6
 			if classname == "wizard":
 				retstr += ":scroll: "
-				self.challengee.maxhp = 100
-				self.challengee.hp = 100
+				self.challengee.maxhp = 80
+				self.challengee.hp = 80
 				self.challengee.maxmp = 50
 				self.challengee.mp = 50
 				self.challengee.attack = 10
@@ -99,8 +99,8 @@ class Battle(object):
 				self.challengee.intelligence = 18
 			if classname == "ranger":
 				retstr += ":bow_and_arrow: "
-				self.challengee.maxhp = 120
-				self.challengee.hp = 120
+				self.challengee.maxhp = 100
+				self.challengee.hp = 100
 				self.challengee.maxmp = 30
 				self.challengee.mp = 30
 				self.challengee.attack = 15
@@ -189,7 +189,7 @@ class Battle(object):
 				else: 
 					retstr += "**" + self.challengee.user.name + "'s turn, choose an option:**"
 			# :skull: :footprints: 
-			retstr += "\n:punch: `" + prefix + "attack".ljust(12) + "(Basic attack)`\n:comet: `" + prefix + "abilities".ljust(12) + "(List abilities)`\n:eggplant: `" + prefix + "run".ljust(12) + "(Run away and forfeit)`\n"
+			retstr += "\n:punch: `" + prefix + "attack".ljust(12) + "(Basic attack)`\n:comet: `" + prefix + "abilities".ljust(12) + "(List abilities)`\n:runner: `" + prefix + "run".ljust(12) + "(Run away and forfeit)`\n"
 		return retstr
 	
 	def abilities(self, user, prefix):
@@ -345,9 +345,10 @@ def handleMessage(message, prefix):
 						# Abilities
 						if txt.lower().startswith(prefix + "heal"):
 							if battle.isPlayersTurn(message.author):
+							# allow for healing teammates or "all"
 								return battle.heal(message.author) + "\n\n" + battle.status() + "\n" + battle.options(prefix)
 						
-						if txt.lower().startswith(prefix + "defend"):
+						if txt.lower().startswith(prefix + "Energy Bolt"):
 							if battle.isPlayersTurn(message.author):
 								return battle.heal(message.author) + "\n\n" + battle.status() + "\n" + battle.options(prefix)
 						

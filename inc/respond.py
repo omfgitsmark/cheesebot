@@ -6,7 +6,7 @@ from inc import misc
 def getResponse(msg):
 	#try:
 		txt = msg.content.lower()
-		if "cheesebot" in txt:
+		if "cheesebot" in txt and not txt.startswith('.'):
 			words = ["how are you?", "how are you doing?", "how are you,", "how are you doing,", "how are you doin?", "how are you doin,"]
 			if any(word in txt for word in words):
 				responses = {0: "I am doing well. How are you, " + msg.author.name + "?", 1: "I am great, how are you today?"}

@@ -2,35 +2,32 @@ import discord
 from discord.ext.commands import Bot
 import random
 import sqlite3
-from inc import battle, respond, cards, help, config, misc
+from inc import battle, respond, cards, help, config, trivia, misc
 
 bot_prefix = '.'
 cheeseBot = Bot(command_prefix=bot_prefix)
-deck = cards.Deck()
 
 @cheeseBot.event
 async def on_ready():
-	# do DB setup on initial run
+	misc.setupDB()
 	misc.debug("cheeseBot Online!")
 	config.loadConfig(cheeseBot)
     
 @cheeseBot.event
 async def on_message(message):
-	if message.author.bot:
-		return
+	if message.author.bot: return
+	if config.isUserBanned(message.author): return
 	global bot_prefix
+	# trivia handling
+	tmp = trivia.trivia.handler(message, bot_prefix)
+	if tmp: return await cheeseBot.send_message(message.channel, tmp)
 	# config print command
 	if message.content.lower().startswith(bot_prefix + "config"):
-		retstr = "```"
-		for cfg in config.cfg:
-			tmpsrv = cheeseBot.get_server(cfg["server"])
-			retstr += "Name = " + tmpsrv.name + " | ID = " + cfg["server"] + " | Topic = \"" + cfg["topic"] + "\" | Respond = " + str(cfg["respond"]) + "\n" 
-		retstr += "```"
-		return await cheeseBot.send_message(message.channel, retstr)
+		if message.author.id == "323215523284385793": #message.author.top_role.permissions.administrator:
+			return await cheeseBot.send_message(message.channel, config.printConfig(cheeseBot))
 	# battle commands
 	tmp = battle.handleMessage(message, bot_prefix)
-	if tmp:
-		return await cheeseBot.send_message(message.channel, tmp)
+	if tmp: return await cheeseBot.send_message(message.channel, tmp)
 	# help command override
 	if message.content.lower().startswith(bot_prefix + "help"):
 		return await cheeseBot.send_message(message.channel, help.getHelp(message, bot_prefix))
@@ -49,10 +46,13 @@ async def info():
 	"""Retrieves bot information."""
 	return await cheeseBot.say('Hello, I am :cheese:**cheeseBot**!\n Find me at: https://github.com/omfgitsmark/cheesebot \n\nCheck out http://249d.com for more projects and information.')
 
-@cheeseBot.command()
-async def invite():
+@cheeseBot.command(pass_context=True)
+async def invite(ctx):
 	"""Generates invite link."""
-	return await cheeseBot.say("https://discord.gg/K5MqgPs")
+	if ctx.message.server.id == "331919313801969667":
+		return await cheeseBot.say("https://discord.gg/K5MqgPs")
+	if ctx.message.server.id == "222412917365145601":
+		return await cheeseBot.say("https://discord.gg/5tnDXvZ")
 
 @cheeseBot.command(pass_context=True)
 async def shutup(ctx):
@@ -134,7 +134,7 @@ async def cute():
 	"""For therapeutic purposes."""
 	responses = {0: "http://249d.com/cute/1.jpg", 1: "http://249d.com/cute/2.jpg", 2: "http://249d.com/cute/3.png", 3: "http://249d.com/cute/4.jpg", 4: "http://249d.com/cute/5.png", 5: "http://249d.com/cute/6.jpg", 6: "http://249d.com/cute/7.jpg", 7: "http://249d.com/cute/8.jpg", 8: "http://249d.com/cute/9.png", 9: "http://249d.com/cute/10.jpg", 10: "http://249d.com/cute/11.jpg", 11: "http://249d.com/cute/12.jpg", 12: "http://249d.com/cute/13.JPG", 13: "http://249d.com/cute/14.png", 14: "http://249d.com/cute/15.png"}
 	return await cheeseBot.say(responses[random.randint(0,14)])
-
+	
 @cheeseBot.command(pass_context=True)
 async def score(ctx):
 	"""Shows your current score."""
@@ -160,7 +160,6 @@ async def score(ctx):
 @cheeseBot.command(pass_context=True)
 async def deal(ctx):
 	"""Deal a poker hand."""
-	global deck
 	if " " in ctx.message.content:
 		notestr = ""
 		amount = 5
@@ -171,9 +170,9 @@ async def deal(ctx):
 				notestr = "*NOTE: Maximum number of dealt cards is 26*\n"
 		except:
 			amount = 5
-		return await cheeseBot.say(notestr + deck.toString(deck.deal(amount)))
+		return await cheeseBot.say(notestr + cards.deck.toString(cards.deck.deal(amount)))
 	else:
-		return await cheeseBot.say(deck.toString(deck.deal(5)))
+		return await cheeseBot.say(cards.deck.toString(cards.deck.deal(5)))
 	
 @cheeseBot.command()
 async def shitlist():
@@ -246,13 +245,28 @@ async def topic(ctx):
 				i["topic"] = ctx.message.content.replace(bot_prefix + "topic ", "")
 				config.saveConfig()
 				return await cheeseBot.say(":pencil2: **Topic Set:** " + i["topic"])
-		
 	for i in config.cfg:
 		if i["server"] == ctx.message.server.id:
 			if i["topic"]:
 				return await cheeseBot.say(":notepad_spiral: **Topic:** " + i["topic"])
 			else:
 				return await cheeseBot.say(":thought_balloon: No topic has been set. Say `" + bot_prefix + "topic \"Your topic here\"` to set the topic.")
-	
-	
-cheeseBot.run("secret")
+				
+@cheeseBot.command(pass_context=True)
+async def award(ctx):	
+	if len(ctx.message.mentions) > 0:
+	#ctx.message.author,message.mentions[0]
+		conn = sqlite3.connect('data/bot.db')
+		c = conn.cursor()
+		c.execute("SELECT * FROM scores WHERE name=?", (ctx.message.mentions[0].name,))
+		rows = c.fetchall()
+		if len(rows) > 0:
+			newscore = rows[0][2] + 1
+			c.execute("UPDATE scores SET score=? WHERE name=?", (newscore, ctx.message.mentions[0].name))
+		else:
+			c.execute("INSERT INTO scores VALUES (NULL, ?, 1)", (ctx.message.mentions[0].name,))
+		conn.commit()
+		conn.close()
+		return await cheeseBot.say("**" + ctx.message.mentions[0].name + "** has been awarded 1 point!")	
+
+cheeseBot.run(config.getToken())
