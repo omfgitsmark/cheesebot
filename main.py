@@ -302,8 +302,4 @@ async def award(ctx):
 	else:
 		return await cheeseBot.say("Please provide a user to award points to!")
 		
-#@cheeseBot.command(pass_context=True)
-#async def test(ctx):			
-#	return await cheeseBot.send_message(ctx.message.author, "test")
-		
 cheeseBot.run(config.getToken())
