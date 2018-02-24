@@ -9,7 +9,6 @@ cheeseBot = Bot(command_prefix=bot_prefix)
 
 @cheeseBot.event
 async def on_ready():
-	misc.setupDB()
 	misc.debug("cheeseBot Online!")
 	config.loadConfig(cheeseBot)
     
@@ -23,7 +22,7 @@ async def on_message(message):
 	if tmp: return await cheeseBot.send_message(message.channel, tmp)
 	# config print command
 	if message.content.lower().startswith(bot_prefix + "config"):
-		if message.author.id == "323215523284385793": #message.author.top_role.permissions.administrator:
+		if message.author.id == config.getOwner():
 			return await cheeseBot.send_message(message.channel, config.printConfig(cheeseBot))
 	# battle commands
 	tmp = battle.handleMessage(message, bot_prefix)
@@ -32,12 +31,17 @@ async def on_message(message):
 	if message.content.lower().startswith(bot_prefix + "help"):
 		return await cheeseBot.send_message(message.channel, help.getHelp(message, bot_prefix))
 	# Response handling
-	for i in config.cfg:
-		if i["server"] == message.server.id:
-			if i["respond"] > 0:
-				tmpresponse = respond.getResponse(message)
-				if tmpresponse:
-					return await cheeseBot.send_message(message.channel, tmpresponse)
+	if not message.server:
+		tmpresponse = respond.getResponse(message)
+		if tmpresponse:
+			return await cheeseBot.send_message(message.author, tmpresponse)
+	else:
+		for i in config.cfg:
+			if i["server"] == message.server.id:
+				if i["respond"] > 0:
+					tmpresponse = respond.getResponse(message)
+					if tmpresponse:
+						return await cheeseBot.send_message(message.channel, tmpresponse)
 	# Default command handling
 	return await cheeseBot.process_commands(message)
 
@@ -132,8 +136,32 @@ async def meme(ctx):
 @cheeseBot.command()
 async def cute():
 	"""For therapeutic purposes."""
-	responses = {0: "http://249d.com/cute/1.jpg", 1: "http://249d.com/cute/2.jpg", 2: "http://249d.com/cute/3.png", 3: "http://249d.com/cute/4.jpg", 4: "http://249d.com/cute/5.png", 5: "http://249d.com/cute/6.jpg", 6: "http://249d.com/cute/7.jpg", 7: "http://249d.com/cute/8.jpg", 8: "http://249d.com/cute/9.png", 9: "http://249d.com/cute/10.jpg", 10: "http://249d.com/cute/11.jpg", 11: "http://249d.com/cute/12.jpg", 12: "http://249d.com/cute/13.JPG", 13: "http://249d.com/cute/14.png", 14: "http://249d.com/cute/15.png"}
-	return await cheeseBot.say(responses[random.randint(0,14)])
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("SELECT * FROM cute ORDER BY RANDOM() LIMIT 1")
+	rows = c.fetchall()
+	retstr = rows[0][1]
+	conn.commit()
+	conn.close()
+	return await cheeseBot.say(retstr)
+	
+@cheeseBot.command(pass_context=True)
+async def addcute(ctx):
+	"""Adds a link to the cute list."""
+	arr = ctx.message.content.split(" ")
+	addval = arr[1]
+	if addval.lower().startswith("http://") or addval.lower().startswith("https://"):
+		if addval.lower().endswith(".jpg") or addval.lower().endswith(".png") or addval.lower().endswith(".gif"):
+			conn = sqlite3.connect('data/bot.db')
+			c = conn.cursor()
+			c.execute("INSERT INTO cute VALUES(NULL, ?)",(addval,))
+			conn.commit()
+			conn.close()
+			return await cheeseBot.say("Successfully added!")
+		else:
+			return await cheeseBot.say("Must be a valid image!")
+	else:
+		return await cheeseBot.say("Must be a valid link!")
 	
 @cheeseBot.command(pass_context=True)
 async def score(ctx):
@@ -255,18 +283,27 @@ async def topic(ctx):
 @cheeseBot.command(pass_context=True)
 async def award(ctx):	
 	if len(ctx.message.mentions) > 0:
-	#ctx.message.author,message.mentions[0]
+		name = ctx.message.mentions[0].name
+	else:
+		name = ctx.message.content.replace(bot_prefix + "award", "").strip()
+	if name:
 		conn = sqlite3.connect('data/bot.db')
 		c = conn.cursor()
-		c.execute("SELECT * FROM scores WHERE name=?", (ctx.message.mentions[0].name,))
+		c.execute("SELECT * FROM scores WHERE name=?", (name,))
 		rows = c.fetchall()
 		if len(rows) > 0:
 			newscore = rows[0][2] + 1
-			c.execute("UPDATE scores SET score=? WHERE name=?", (newscore, ctx.message.mentions[0].name))
+			c.execute("UPDATE scores SET score=? WHERE name=?", (newscore, name))
 		else:
-			c.execute("INSERT INTO scores VALUES (NULL, ?, 1)", (ctx.message.mentions[0].name,))
+			c.execute("INSERT INTO scores VALUES (NULL, ?, 1)", (name,))
 		conn.commit()
 		conn.close()
-		return await cheeseBot.say("**" + ctx.message.mentions[0].name + "** has been awarded 1 point!")	
-
+		return await cheeseBot.say("**" + name + "** has been awarded 1 point!")	
+	else:
+		return await cheeseBot.say("Please provide a user to award points to!")
+		
+#@cheeseBot.command(pass_context=True)
+#async def test(ctx):			
+#	return await cheeseBot.send_message(ctx.message.author, "test")
+		
 cheeseBot.run(config.getToken())
