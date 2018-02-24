@@ -17,7 +17,7 @@ def getHelp(msg, prefix):
 		elif txt.lower() == "choose":
 			helpstr = "```\n" + prefix + "choose\n\nChoose between any number of options given.\n\nExamples:\n\n" + prefix + "choose option1 option2\n" + prefix + "choose \"option 1\" \"option 2\" \"option 3\"```"
 		elif txt.lower() == "trivia":
-			helpstr = "```\n" + prefix + "trivia\n\nAsks a random trivia question to the channel.\n\nExamples:\n\n" + prefix + "trivia```"
+			helpstr = "```\n" + prefix + "trivia\n\nAsks a random trivia question to the channel.\n\nExamples:\n\n" + prefix + "trivia```\n\n**NOTE:** Use `" + prefix + "triviahelp` for complete information."
 		elif txt.lower() == "challenge":
 			helpstr = "```\n" + prefix + "challenge\n\nChallenge a player to a battle, or issue an open challenge to everyone.\n\nExamples:\n\n" + prefix + "challenge\n" + prefix + "challenge @user#XXXX ```"
 		elif txt.lower() == "deal":
@@ -40,7 +40,7 @@ def getHelp(msg, prefix):
 		helpstr = "```\n[GENERAL]\n\n"
 		helpstr += "  " + prefix + "info".ljust(15) + "Prints bot information.\n"
 		helpstr += "  " + prefix + "invite".ljust(15) + "Prints an invite link.\n"
-		helpstr += "  " + prefix + "topic".ljust(15) + "Gets or Sets the current topic.\n"
+		helpstr += "  " + prefix + "topic".ljust(15) + "Prints or Sets the current topic.\n"
 		helpstr += "\n[TOOLS]\n\n"
 		helpstr += "  " + prefix + "roll".ljust(15) + "Roll them dice. (Uses \"NdN\" format)\n"
 		helpstr += "  " + prefix + "choose".ljust(15) + "Picks between multiple choices given.\n"

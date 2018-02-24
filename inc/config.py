@@ -41,7 +41,7 @@ def printConfig(bot):
 	retstr = "```"
 	for item in cfg:
 		tmpsrv = bot.get_server(item["server"])
-		retstr += "Name: " + tmpsrv.name + " | ID: " + item["server"] + " | Topic: \"" + item["topic"] + "\" | Respond: " + str(item["respond"]) + "\n" 
+		retstr += tmpsrv.name + "\n    ID: " + item["server"] + "\n    Topic: \"" + item["topic"] + "\"\n    Respond: " + str(item["respond"]) + "\n\n" 
 	retstr += "```"
 	return retstr
 	
@@ -59,6 +59,14 @@ def getToken():
 	conn = sqlite3.connect('data/bot.db')
 	c = conn.cursor()
 	c.execute("SELECT * FROM globalconfig WHERE name='token'")
+	rows = c.fetchall()
+	if len(rows) > 0:
+		return rows[0][1]
+		
+def getOwner():
+	conn = sqlite3.connect('data/bot.db')
+	c = conn.cursor()
+	c.execute("SELECT * FROM globalconfig WHERE name='owner'")
 	rows = c.fetchall()
 	if len(rows) > 0:
 		return rows[0][1]

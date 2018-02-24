@@ -6,18 +6,6 @@ import urllib.request
 import datetime
 import os
  
-def setupDB():
-	if not os.path.isfile('data/bot.db'):
-		if not os.path.exists("data"):
-			os.makedirs("data")
-		conn = sqlite3.connect('data/bot.db')
-		c = conn.cursor()
-		c.execute("CREATE TABLE config ( `id` INTEGER NOT NULL, `topic` TEXT, `respond` INTEGER, `info` TEXT, `help` TEXT, `invite` TEXT, `enableEmoji` INTEGER, `defaultEmoji` TEXT, `nick` TEXT, `battlechannel` TEXT, PRIMARY KEY(`id`) )")
-		c.execute("CREATE TABLE IF NOT EXISTS scores ( 'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 'name' text, 'score' int )")
-		c.execute("CREATE TABLE IF NOT EXISTS shitlist ( 'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 'name' TEXT )")
-		conn.commit()
-		conn.close()
-		print("Database Setup.")
 
 def getWebData(url):
 	try:

@@ -169,7 +169,7 @@ class Battle(object):
 		elif self.state == "Choosing Loadouts":
 			return ":clipboard: **" + self.challenger.user.name + "**  vs.  **" + self.challengee.user.name + "** | " + self.state + " | Turn 1"
 		elif self.state == "In Combat":
-			return ":crossed_swords: **" + self.challenger.user.name + "** (" + self.challenger.battleclass +") **HP:** " + str(self.challenger.hp) + "/" + str(self.challenger.maxhp) + "  **MP:** " + str(self.challenger.mp) + "/" + str(self.challenger.maxmp) + "  vs.  **" + self.challengee.user.name + "** (" + self.challengee.battleclass +") **HP:** " + str(self.challengee.hp) + "/" + str(self.challengee.maxhp) + "  **MP:** " + str(self.challengee.mp) + "/" + str(self.challengee.maxmp)
+			return ":crossed_swords: **" + self.challenger.user.name + "** (" + self.challenger.battleclass +") **HP:** `" + str(self.challenger.hp) + "/" + str(self.challenger.maxhp) + "`  **MP:** `" + str(self.challenger.mp) + "/" + str(self.challenger.maxmp) + "`  vs.  **" + self.challengee.user.name + "** (" + self.challengee.battleclass +") **HP:** `" + str(self.challengee.hp) + "/" + str(self.challengee.maxhp) + "`  **MP:** `" + str(self.challengee.mp) + "/" + str(self.challengee.maxmp) + "`"
 	
 	def options(self, prefix):
 		retstr = ""
@@ -200,7 +200,7 @@ class Battle(object):
 		else:
 			classstr = self.challengee.battleclass
 		if classstr == "warrior":
-			retstr += ":heart:  `" + prefix + "heal".ljust(12) + "[-10MP]".ljust(10) + "(Heals a small amount of HP.)`"
+			retstr += ":revolving_hearts:  `" + prefix + "heal".ljust(12) + "[-10MP]".ljust(10) + "(Heals a small amount of HP.)`"
 		elif classstr == "wizard":
 			retstr += ":revolving_hearts:  `" + prefix + "heal".ljust(12) + "[-10MP]".ljust(10) + "(Heals a small amount of HP.)`"
 		elif classstr == "ranger":
