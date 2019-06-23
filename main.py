@@ -2,7 +2,7 @@ import discord
 from discord.ext.commands import Bot
 import random
 import sqlite3
-from inc import battle, respond, cards, help, config, trivia, misc
+from inc import mtg, battle, respond, cards, help, config, trivia, misc
 
 bot_prefix = '.'
 cheeseBot = Bot(command_prefix=bot_prefix)
@@ -17,20 +17,27 @@ async def on_message(message):
 	if message.author.bot: return
 	if config.isUserBanned(message.author): return
 	global bot_prefix
-	# trivia handling
+	## trivia handling
 	tmp = trivia.trivia.handler(message, bot_prefix)
 	if tmp: return await cheeseBot.send_message(message.channel, tmp)
-	# config print command
+	## config print command
 	if message.content.lower().startswith(bot_prefix + "config"):
 		if message.author.id == config.getOwner():
 			return await cheeseBot.send_message(message.channel, config.printConfig(cheeseBot))
-	# battle commands
+	## battle commands
 	tmp = battle.handleMessage(message, bot_prefix)
 	if tmp: return await cheeseBot.send_message(message.channel, tmp)
-	# help command override
+	## mtg commands
+	tmp = mtg.mtgHandler(message, bot_prefix)
+	if tmp:
+		if type(tmp) == discord.embeds.Embed:
+			return await cheeseBot.send_message(message.channel, embed=tmp)
+		else:
+			return await cheeseBot.send_message(message.channel, tmp)
+	## help command override
 	if message.content.lower().startswith(bot_prefix + "help"):
 		return await cheeseBot.send_message(message.channel, help.getHelp(message, bot_prefix))
-	# Response handling
+	## Response handling
 	if not message.server:
 		tmpresponse = respond.getResponse(message)
 		if tmpresponse:
@@ -42,7 +49,7 @@ async def on_message(message):
 					tmpresponse = respond.getResponse(message)
 					if tmpresponse:
 						return await cheeseBot.send_message(message.channel, tmpresponse)
-	# Default command handling
+	## Default command handling
 	return await cheeseBot.process_commands(message)
 
 @cheeseBot.command()
@@ -301,5 +308,19 @@ async def award(ctx):
 		return await cheeseBot.say("**" + name + "** has been awarded 1 point!")	
 	else:
 		return await cheeseBot.say("Please provide a user to award points to!")
-		
-cheeseBot.run(config.getToken())
+
+@cheeseBot.command(pass_context=True)
+async def kill(ctx):
+	"""Ends the bot program."""
+	if ctx.message.author.id == config.getOwner():
+		misc.debug("Owner has sent the kill command...")
+		#raise SystemExit
+
+try:
+	cheeseBot.run(config.getToken())
+except SystemExit:
+	misc.debug("Program ended by system.")
+except KeyboardInterrupt:
+	misc.debug("Program ended by keyboard interrupt.")
+except Exception as e:
+	misc.debug('ERROR: ' + str(e))

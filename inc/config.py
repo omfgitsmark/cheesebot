@@ -51,6 +51,7 @@ def isUserBanned(user):
 	c = conn.cursor()
 	c.execute("SELECT * FROM bans WHERE id=?",(user.id,))
 	rows = c.fetchall()
+	conn.close()
 	if len(rows) > 0:
 		return True
 	return False
@@ -60,6 +61,7 @@ def getToken():
 	c = conn.cursor()
 	c.execute("SELECT * FROM globalconfig WHERE name='token'")
 	rows = c.fetchall()
+	conn.close()
 	if len(rows) > 0:
 		return rows[0][1]
 		
@@ -68,6 +70,7 @@ def getOwner():
 	c = conn.cursor()
 	c.execute("SELECT * FROM globalconfig WHERE name='owner'")
 	rows = c.fetchall()
+	conn.close()
 	if len(rows) > 0:
 		return rows[0][1]
 	

@@ -18,7 +18,7 @@ class Trivia(object):
 		self.question = 0;
 		
 	def load(self):
-		conn = sqlite3.connect('data/bot.db')
+		conn = sqlite3.connect('data/trivia.db')
 		c = conn.cursor()
 		if self.category:
 			if self.category == "NOT_MUSIC":
@@ -105,7 +105,7 @@ class Trivia(object):
 			self.lastwinner = {"user":message.author,"count":1}
 		retstr += "\nThe answer was: **" + self.answer + "**"
 		self.stop()
-		conn = sqlite3.connect('data/bot.db')
+		conn = sqlite3.connect('data/trivia.db')
 		c = conn.cursor()
 		c.execute("SELECT * FROM triviascores WHERE name=?", (message.author.name,))
 		rows = c.fetchall()
@@ -238,7 +238,7 @@ class Trivia(object):
 			arr = message.content.split(" ")
 			if len(arr) > 1 and arr[1]:
 				testname = arr[1]
-		conn = sqlite3.connect('data/bot.db')
+		conn = sqlite3.connect('data/trivia.db')
 		c = conn.cursor()
 		c.execute("SELECT * FROM triviascores WHERE name=?", (testname,))
 		rows = c.fetchall()
