@@ -2,6 +2,7 @@
 A Discord bot made in Python.
 
 
+
 Features:
 - Trivia
 - Magic: The Gathering card queries
@@ -9,6 +10,7 @@ Features:
 - Playing cards
 - Multi-server configuration
 - Lots of basic commands
+
 
 
 Installation:
